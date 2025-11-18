@@ -604,9 +604,12 @@
 
             // Special rule for "18 Cer" → fallback to "Cer"
             if (label === "12 CDC" && found) {
-
-              status = "cdc";
-
+              found = fileNames.some(name => {
+                const base = name.split('/').pop();               // e.g. "12-XYZ-cdc.docx"
+                const baseNoExt = base.replace(/\.[^.]+$/, '');   // remove extension
+                return baseNoExt.startsWith('12-') && /cdc$/i.test(baseNoExt);
+              });
+              status = found ? "cdc" : "none";
             }
 
             // Special rule for "CDC REPORT" → fallback to "Cer"
@@ -1367,5 +1370,6 @@
 </body>
 
 </html>
+
 
 
