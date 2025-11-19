@@ -4,7 +4,6 @@
 <head>
   <meta charset="UTF-8" />
   <title>Epac Checker</title>
-
   <link rel="icon" type="image/png"
     href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAACXBIWXMAAAsTAAALEwEAmpwYAAACwklEQVR4nO2XXWhSYRjHT5fdd9dNEUG0m91EEZgOocZGQRAL6qKoPJO6ae1CglqwKGr0QSxtrph22V11dLQxHI4FhTZqmlO3nTmduq1dZJNcHfUfb2fNo+dovn7UzR74w8uD8vze58tXhtk0iek4nNNx+MxySLMcQKF0Q18wecgaNTDVBGfpguZpR68HO3u9UFkWHlQEwL6Gr1qA3xCPvVBZo1fpATjqtCsCEO0yerMqS/Q0LQBqBUC02+TLaC2x5ooAOoeBxVVsGDkTn8kFuGM5vZkpDkC0x+QX1JalRmqAJy7IjPhKAZAGVILY2xf43mpd2U4FYHbLAYivVAkan/KKAET7ns1NUgE8eicHID57UO4XMsCtMeDMSwHq5zHsHwjLdHBgIUUFoLcBtmAu1VxA9BlGxExIZXQBF+1/b1IqALYOoga46czdstv5jwG6nUA2m6szORNfYQ+Q8awLgLnIFBT2wJ3x/wxgLtKEHYPfcM/xEUbnOG6PTEHPpetTAukYku9dG4pg4tN1ZHgtMKfZUHLmKMBrbiB8YGtZAOw6BE0TPnS4kZptyQusIBf86m1lAbAUIjcvI7goXuMAmC0lAfQ2Md1/FhE5Ky2iu+tNSNJeMmjkJBBpk0A0tdVkFS+uig1XWPM8hU8A6RUg8UICoLZXNAWsQvrvOybyA0Z1QOiweA4dAX4EgJ8hYL5V8jn1Uk1+jt0xIBB+mw8gxIDUByDUDCRHgUwCiJwqyIx6rSRA5zAQlzxIYuRBMqQM4IlMFWTgvBhUWAayAhC/rNSIfM2mQM+lkZw+JocQ4sCXnmK90V/TRyn33lLeCIoNmMZ8U4MMQCf+IakI4JJ9DSFfe7l7oEthDTHMhVc4W80yujL4FX5vR+mb85ouxSVUAOGttBztXBb9Y6PwTBqQmD4OgddmU7Mty6TmimlnNo1hfgESe5mBhgynVgAAAABJRU5ErkJggg==">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -469,7 +468,7 @@
 
         // for getting labels
         function getLabelsForFile() {
-          return ["04", "Customer report", "Internal report", "06", "07", "08", "12 CDS", "13 Next", "14 APM", "16 CHR", "17 CONTRACT", "18 Cer", "18 ACR", "18 CS", "12 CDC", "CDC Report"];
+          return ["04", "Customer report", "Internal report","11", "06", "07", "08",  "12 CDS", "13 Next", "14 APM", "16 CHR", "17 CONTRACT", "18 Cer", "18 ACR", "18 CS", "12 CDC", "CDC Report"];
         }
 
         let allResults = []; // Store all results for export
@@ -499,7 +498,7 @@
               case "04":
                 found = fileNames.some(name => {
                   const baseName = name.split('/').pop(); // get file name only
-                  return baseName.startsWith("04-") || baseName.startsWith("11-");
+                  return baseName.startsWith("04-");
                 });
                 status = found ? "full" : "none";
                 break;
@@ -524,6 +523,13 @@
                 found = fileNames.some(name => {
                   const baseName = name.split('/').pop(); // get file name only
                   return baseName.startsWith("08-");
+                });
+                status = found ? "full" : "none";
+                break;
+              case "11":
+                found = fileNames.some(name => {
+                  const baseName = name.split('/').pop(); // get file name only
+                  return baseName.startsWith("11-");
                 });
                 status = found ? "full" : "none";
                 break;
@@ -1370,6 +1376,3 @@
 </body>
 
 </html>
-
-
-
