@@ -403,7 +403,7 @@
   <div class="container">
     <div class="newbody">
       <header style="margin-bottom: 30px;">
-        <h1 class="game-pop-up" style="cursor:pointer;" title="Open mini game">📦EPAC ZIP Checker</h1>
+        <h1 class="game-pop-up" style="cursor:pointer;width: 310px;">📦EPAC ZIP Checker</h1>
 
         <p style="color: #555; margin: 5px;">Analyze and export ZIP file contents efficiently.</p>
         <h3 style="color: #e21313; margin: 5px; ">*Epac CertIQ must be open along (If you want to Query)*</h3>
@@ -469,7 +469,7 @@
               inputEl.disabled = true;
             }
           }
-         // game popup ctrl + left click
+          // game popup ctrl + left click
           document.addEventListener('click', (e) => {
             const gp = e.target.closest('.game-pop-up');
             if (!gp) return;
@@ -492,7 +492,7 @@
             if (ev.key === 'Enter') makeGuess();
           });
         })();
-        
+
       </script>
 
       <!-- Label list -->
@@ -566,11 +566,34 @@
         }
 
         async function checkZipFile(zipFile, labels, isRAUChecked) {
-          const zip = await JSZip.loadAsync(zipFile);
-          const fileNames = Object.keys(zip.files).map(name => normalize(name));
-          //const searchText = document.getElementById("searchText").value.trim().toLowerCase();
-          // const containsCustomerReport = fileNames.some(name => name.includes('customer report'));
-          // const containsInternalReport = fileNames.some(name => name.includes('internal report'));
+          // Recursively collect entries; if nested zip encountered, expand it
+          async function collectEntriesFromZip(zip, prefix = '') {
+            const results = [];
+            const names = Object.keys(zip.files).sort();
+            for (const name of names) {
+              const entry = zip.files[name];
+              if (entry.dir) continue;
+              const fullPath = prefix + name;
+              // If the entry is itself a zip, try to load and recurse
+              if (name.toLowerCase().endsWith('.zip')) {
+                try {
+                  const ab = await entry.async('arraybuffer');
+                  const nestedZip = await JSZip.loadAsync(ab);
+                  const nestedEntries = await collectEntriesFromZip(nestedZip, fullPath + '/');
+                  results.push(...nestedEntries);
+                } catch (e) {
+                  console.warn('Could not open nested zip:', fullPath, e);
+                }
+              } else {
+                results.push([fullPath, entry]);
+              }
+            }
+            return results;
+          }
+
+          const topZip = await JSZip.loadAsync(zipFile);
+          const entries = await collectEntriesFromZip(topZip, '');
+          const fileNames = entries.map(([n]) => n.toLowerCase());
 
           const results = [];
 
@@ -585,7 +608,7 @@
             switch (label) {
               case "04":
                 found = fileNames.some(name => {
-                  const baseName = name.split('/').pop(); // get file name only
+                  const baseName = name.split('/').pop();
                   return baseName.startsWith("04-");
                 });
                 status = found ? "full" : "none";
@@ -593,7 +616,7 @@
 
               case "06":
                 found = fileNames.some(name => {
-                  const baseName = name.split('/').pop(); // get file name only
+                  const baseName = name.split('/').pop();
                   return baseName.startsWith("06-");
                 });
                 status = found ? "full" : "none";
@@ -601,7 +624,7 @@
 
               case "07":
                 found = fileNames.some(name => {
-                  const baseName = name.split('/').pop(); // get file name only
+                  const baseName = name.split('/').pop();
                   return baseName.startsWith("07-");
                 });
                 status = found ? "full" : "none";
@@ -609,117 +632,207 @@
 
               case "08":
                 found = fileNames.some(name => {
-                  const baseName = name.split('/').pop(); // get file name only
+                  const baseName = name.split('/').pop();
                   return baseName.startsWith("08-");
                 });
                 status = found ? "full" : "none";
                 break;
               case "11":
                 found = fileNames.some(name => {
-                  const baseName = name.split('/').pop(); // get file name only
+                  const baseName = name.split('/').pop();
                   return baseName.startsWith("11-");
                 });
                 status = found ? "full" : "none";
                 break;
 
               default:
-                // Generic match for any other label not covered above
                 found = fileNames.some(name =>
                   parts.every(part => name.toLowerCase().includes(part))
                 );
                 status = found ? "full" : "none";
             }
 
-            // Special rule for "4" → fallback to "4"
+            // Fallback rules (same as before) - unchanged logic but operates on nested-aware fileNames
             if (label === "customer report" && !found) {
-
               found = fileNames.some(name => name.includes("visit report"));
-              if (found) {
-                status = "full";
-              }
+              if (found) status = "full";
             }
 
-
-            // Special rule for "13 Next" → fallback to "Cer"
             if (label === "13 Next" && !found) {
               found = fileNames.some(name => {
-                const baseName = name.split('/').pop(); // get file name only
+                const baseName = name.split('/').pop();
                 return baseName.startsWith("13-");
               });
-              if (found) {
-                status = "full";
-              }
+              if (found) status = "full";
             }
-            // Special rule for "14 APM" → fallback to "Cer"
+
             if (label === "14 APM" && !found) {
               found = fileNames.some(name => name.includes("apm"));
-              if (found) {
-                status = "full";
-              }
+              if (found) status = "full";
             }
 
-
-            // Special rule for "17 CONTRACT"
             if (label === "17 CONTRACT" && !found) {
               found = fileNames.some(name => name.includes("contract"));
-              if (found) {
-                status = "full";
-              }
+              if (found) status = "full";
             }
 
-
-            // Special rule for "18 Cer" → fallback to "Cer"
             if (label === "18 Cer" && !found) {
               found = fileNames.some(name => name.includes("cer"));
-              if (found) {
-                status = "full";
-              }
+              if (found) status = "full";
             }
-            // Special rule for "18 Cer" → fallback to "Cer"
             if (label === "18 ACR" && !found) {
               found = fileNames.some(name => name.includes("acr"));
-              if (found) {
-                status = "full";
-              }
+              if (found) status = "full";
             }
-            // Special rule for "18 CS" → fallback to "18 SC"
             if (label === "18 CS" && !found) {
               const fallbackParts = ["18", "sc"];
               found = fileNames.some(name =>
                 fallbackParts.every(part => name.includes(part))
               );
-              if (found) {
-                status = "full";
-              }
+              if (found) status = "full";
             }
             if (label === "16 CHR" && !isRAUChecked) {
-              status = "partial"; // show "-" in Excel
+              status = "partial";
             }
-
-            // Special rule for "18 Cer" → fallback to "Cer"
             if (label === "12 CDC" && found) {
               found = fileNames.some(name => {
-                const base = name.split('/').pop();               // e.g. "12-XYZ-cdc.docx"
-                const baseNoExt = base.replace(/\.[^.]+$/, '');   // remove extension
+                const base = name.split('/').pop();
+                const baseNoExt = base.replace(/\.[^.]+$/, '');
                 return baseNoExt.startsWith('12-') && /cdc$/i.test(baseNoExt);
               });
               status = found ? "cdc" : "none";
             }
-
-            // Special rule for "CDC REPORT" → fallback to "Cer"
             if (label === "CDC Report" && found) {
-
               status = "partial";
-
             }
+
             results.push({ label, found, status });
           });
-
-
 
           return results;
         }
 
+        //normalize string for search
+        function normalizeForSearch(s) {
+          return s
+            .toLowerCase()
+            .replace(/[\xA0\u2000-\u200A\u202F\u205F\u3000]/g, ' ') // normalize weird spaces
+            .replace(/\s+/g, ' ') // collapse multiple spaces
+            .trim();
+        }
+
+        //search text in zip (supports nested zips)
+        async function searchTextInZip(zipFile, labels, keyword, resultContainer, statusDiv) {
+          async function collectEntriesFromZip(zip, prefix = '') {
+            const results = [];
+            const names = Object.keys(zip.files).sort();
+            for (const name of names) {
+              const entry = zip.files[name];
+              if (entry.dir) continue;
+              const fullPath = prefix + name;
+              if (name.toLowerCase().endsWith('.zip')) {
+                try {
+                  const ab = await entry.async('arraybuffer');
+                  const nestedZip = await JSZip.loadAsync(ab);
+                  const nestedEntries = await collectEntriesFromZip(nestedZip, fullPath + '/');
+                  results.push(...nestedEntries);
+                } catch (e) {
+                  console.warn('Could not open nested zip during search:', fullPath, e);
+                }
+              } else {
+                results.push([fullPath, entry]);
+              }
+            }
+            return results;
+          }
+
+          const topZip = await JSZip.loadAsync(zipFile);
+          const entries = await collectEntriesFromZip(topZip, '');
+          const fileEntries = entries; // array of [name, file]
+          const fileNames = fileEntries.map(([n]) => n.toLowerCase());
+
+          for (const label of labels) {
+            const lowerLabel = label.toLowerCase().trim();
+            const parts = lowerLabel.split(/\s+/);
+
+            let matchedEntries = [];
+            switch (label) {
+              case "04":
+                matchedEntries = fileEntries.filter(([name]) => {
+                  const base = name.split('/').pop().toLowerCase();
+                  return (base.startsWith("04-") || base.startsWith("11-")) && (base.endsWith(".docx") || base.endsWith(".doc"));
+                });
+                break;
+              case "06":
+                matchedEntries = fileEntries.filter(([name]) => {
+                  const base = name.split('/').pop().toLowerCase();
+                  return base.startsWith("06-") && (base.endsWith(".docx") || base.endsWith(".doc"));
+                });
+                break;
+              case "07":
+                matchedEntries = fileEntries.filter(([name]) => name.split('/').pop().toLowerCase().startsWith("07-"));
+                break;
+              case "08":
+                matchedEntries = fileEntries.filter(([name]) => name.split('/').pop().toLowerCase().startsWith("08-"));
+                break;
+              default:
+                matchedEntries = fileEntries.filter(([name]) => parts.every(part => name.toLowerCase().includes(part)));
+            }
+
+            if (!matchedEntries.length) {
+              const nlow = name => name.toLowerCase();
+              if (label === "customer report") {
+                matchedEntries = fileEntries.filter(([name]) => nlow(name).includes("visit report"));
+              } else if (label === "13 Next") {
+                matchedEntries = fileEntries.filter(([name]) => name.split('/').pop().toLowerCase().startsWith("13-"));
+              } else if (label === "14 APM") {
+                matchedEntries = fileEntries.filter(([name]) => nlow(name).includes("apm"));
+              } else if (label === "17 CONTRACT") {
+                matchedEntries = fileEntries.filter(([name]) => nlow(name).includes("contract"));
+              } else if (label === "18 Cer") {
+                matchedEntries = fileEntries.filter(([name]) => nlow(name).includes("cer"));
+              } else if (label === "18 ACR") {
+                matchedEntries = fileEntries.filter(([name]) => nlow(name).includes("acr"));
+              } else if (label === "18 CS") {
+                matchedEntries = fileEntries.filter(([name]) => {
+                  const lname = nlow(name);
+                  return ["18", "sc"].every(p => lname.includes(p));
+                });
+              }
+            }
+
+            const resultSpan = resultContainer.querySelector(`.search-result[data-label="${label}"]`);
+            if (!matchedEntries.length) {
+              if (resultSpan) resultSpan.textContent = '';
+              continue;
+            }
+
+            let foundText = false;
+            let snippet = '';
+            for (const entry of matchedEntries) {
+              const base = entry[0].split('/').pop().toLowerCase();
+              if (!(base.endsWith('.docx') || base.endsWith('.doc') || base.endsWith('.pdf') || base.endsWith('.txt') || base.endsWith('.xml') || base.endsWith('.csv'))) continue;
+              const text = normalizeForSearch(await extractTextFromEntry(entry));
+              if (!text) continue;
+
+              const normKeyword = normalizeForSearch(keyword);
+              const idx = text.indexOf(normKeyword);
+
+              if (idx !== -1) {
+                foundText = true;
+                const start = Math.max(0, idx - 40);
+                snippet = text.substr(start, Math.min(160, text.length - start)).replace(/\s+/g, ' ').trim();
+                break;
+              }
+            }
+
+            if (resultSpan) {
+              resultSpan.textContent = foundText ? ' — ✅text found' : ' — ❌ text not found';
+              resultSpan.title = snippet || '';
+            }
+          }
+        }
+        
 
         async function checkMultipleZips() {
           const input = document.getElementById('zipInput');
@@ -1096,7 +1209,178 @@
               container.innerHTML = `<p>❌ Please Check in ORIGINAL file (${err.message})</p>`;
             }
           }
+          // Stack used to drill into nested ZIP files
+          let zipStack = []; // each frame: { name: string, zip: JSZip }
 
+          async function openZipPdfList(zipFile) {
+            const listModal = document.getElementById('pdfListModal');
+            const pdfListPopup = document.getElementById('pdfListPopup');
+            const pdfContainerPopup = document.getElementById('pdfContainerPopup');
+            pdfListPopup.innerHTML = '';
+            pdfContainerPopup.innerHTML = '';
+            listModal.style.display = 'flex';
+            listModal.querySelector('h3').textContent = `📂 Files in ${zipFile.name} :`;
+
+            // reset stack and push top-level zip
+            zipStack = [];
+            const topZip = await JSZip.loadAsync(zipFile);
+            zipStack.push({ name: zipFile.name, zip: topZip });
+            renderCurrentZipList();
+          }
+
+          // Render file list for current top-of-stack zip
+          async function renderCurrentZipList() {
+            const pdfListPopup = document.getElementById('pdfListPopup');
+            pdfListPopup.innerHTML = '';
+            const frame = zipStack[zipStack.length - 1];
+            const title = document.createElement('h4');
+            title.textContent = `Path: ${zipStack.map(f => f.name).join(' / ')}`;
+            pdfListPopup.appendChild(title);
+
+            // breadcrumb Back button
+            if (zipStack.length > 1) {
+              const backBtn = document.createElement('button');
+              backBtn.textContent = '◀ Back';
+              backBtn.className = 'custom-button';
+              backBtn.onclick = () => {
+                zipStack.pop();
+                renderCurrentZipList();
+              };
+              pdfListPopup.appendChild(backBtn);
+            }
+
+            // list entries
+            const keys = Object.keys(frame.zip.files).sort();
+            let addedAny = false;
+            for (const entryName of keys) {
+              const entry = frame.zip.files[entryName];
+              if (entry.dir) continue;
+              // show pdf/docx/txt/xml/csv and zip entries
+              if (/\.(pdf|docx?|txt|xml|csv|zip)$/i.test(entryName)) {
+                addedAny = true;
+                const fileButton = document.createElement('button');
+                fileButton.textContent = entryName;
+
+                fileButton.style.display = 'block';
+                fileButton.style.width = '80%';
+                fileButton.style.padding = '10px 15px';
+                fileButton.style.margin = '5px 0';
+                fileButton.style.border = '1px solid #9970cd';
+                fileButton.style.borderRadius = '6px';
+                fileButton.style.background = 'white';
+                fileButton.style.color = '#9970cd';
+                fileButton.style.cursor = 'pointer';
+                fileButton.style.textAlign = 'left';
+                fileButton.style.transition = 'all 0.2s ease';
+                // Hover effect
+                fileButton.addEventListener('mouseenter', () => {
+                  fileButton.style.background = '#9970cd';
+                  fileButton.style.color = 'white';
+                });
+                fileButton.addEventListener('mouseleave', () => {
+                  fileButton.style.background = 'white';
+                  fileButton.style.color = '#9970cd';
+                });
+                fileButton.onclick = async () => {
+                  const lower = entryName.toLowerCase();
+                  if (lower.endsWith('.zip')) {
+                    // drill into nested zip
+                    try {
+                      fileButton.disabled = true;
+                      const buf = await entry.async('arraybuffer');
+                      const nested = await JSZip.loadAsync(buf);
+                      zipStack.push({ name: entryName, zip: nested });
+                      renderCurrentZipList();
+                    } catch (e) {
+                      alert('Cannot open nested zip: ' + e.message);
+                    } finally {
+                      fileButton.disabled = false;
+                    }
+                  } else if (lower.endsWith('.pdf')) {
+                    openPdfFromEntry(entryName);
+                  } else {
+                    openWordFromEntry(entryName);
+                  }
+                };
+
+                pdfListPopup.appendChild(fileButton);
+              }
+            }
+
+            if (!addedAny) {
+              const li = document.createElement('div');
+              li.textContent = 'No supported files found in this ZIP level.';
+              pdfListPopup.appendChild(li);
+            }
+          }
+
+          // open a PDF present in the current zip stack top by entry name
+          async function openPdfFromEntry(entryName) {
+            const pdfViewerModal = document.getElementById('pdfViewerModal');
+            const pdfContainerPopup = document.getElementById('pdfContainerPopup');
+            pdfContainerPopup.innerHTML = `<p>📄 Loading ${entryName}...</p>`;
+            pdfViewerModal.style.display = 'flex';
+
+            const frame = zipStack[zipStack.length - 1];
+            const file = frame.zip.file(entryName);
+            if (!file) {
+              pdfContainerPopup.innerHTML = `<p>❌ File not found: ${entryName}</p>`;
+              return;
+            }
+            const pdfData = await file.async('uint8array');
+            const pdf = await pdfjsLib.getDocument(pdfData).promise;
+            pdfContainerPopup.innerHTML = `<h3>${entryName}</h3>`;
+            for (let i = 1; i <= pdf.numPages; i++) {
+              const page = await pdf.getPage(i);
+              const viewport = page.getViewport({ scale: 1.2 });
+              const canvas = document.createElement('canvas');
+              const ctx = canvas.getContext('2d');
+              canvas.height = viewport.height;
+              canvas.width = viewport.width;
+              pdfContainerPopup.appendChild(canvas);
+              await page.render({ canvasContext: ctx, viewport }).promise;
+            }
+          }
+
+          // open a Word/Doc entry from the current zip top
+          async function openWordFromEntry(entryName) {
+            const modal = document.getElementById('pdfViewerModal');
+            const container = document.getElementById('pdfContainerPopup');
+            container.innerHTML = `<p>📄 Loading ${entryName}...</p>`;
+            modal.style.display = 'flex';
+
+            const frame = zipStack[zipStack.length - 1];
+            const file = frame.zip.file(entryName);
+            if (!file) {
+              container.innerHTML = `<p>❌ File not found: ${entryName}</p>`;
+              return;
+            }
+
+            const arrayBuffer = await file.async('arraybuffer');
+            try {
+              const result = await mammoth.convertToHtml({ arrayBuffer });
+
+              // read footers from the docx (arrayBuffer is a zip)
+              const innerZip = await JSZip.loadAsync(arrayBuffer);
+              let footerText = "";
+              for (const p of Object.keys(innerZip.files)) {
+                if (p.startsWith('word/footer') && p.endsWith('.xml')) {
+                  const xmlContent = await innerZip.file(p).async('string');
+                  const parser = new DOMParser();
+                  const xmlDoc = parser.parseFromString(xmlContent, 'application/xml');
+                  const texts = xmlDoc.getElementsByTagName('w:t');
+                  footerText += Array.from(texts).map(t => t.textContent).join(' ') + '\n';
+                }
+              }
+
+              container.innerHTML = `<h3>${entryName}</h3>
+                           ${result.value}
+                           <h4>📌 Footer:</h4>
+                           <pre>${footerText || "(No footer found)"}</pre>`;
+            } catch (err) {
+              container.innerHTML = `<p>❌ Please Check in ORIGINAL file (${err.message})</p>`;
+            }
+          }
 
 
           // Close modal handlers
@@ -1464,4 +1748,3 @@
 </body>
 
 </html>
-
