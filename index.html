@@ -967,16 +967,16 @@
               }
             };
 
-
-
             const searchResultsDiv = document.createElement('div');
             searchResultsDiv.style.marginTop = '5px';
 
 
             rightSide.appendChild(rauLabel);
             rightSide.appendChild(rauCheckbox);
+
             titleRow.appendChild(leftSide);
             titleRow.appendChild(rightSide);
+
             searchDiv.appendChild(searchLabel);
             searchDiv.appendChild(searchInput);
             searchDiv.appendChild(searchBtn);
@@ -1049,7 +1049,6 @@
                     div.appendChild(searchResultSpan);
                   }
 
-
                   resultContainer.appendChild(div);
                 });
               }
@@ -1069,7 +1068,6 @@
             rauCheckbox.addEventListener('change', refreshResults);
           }
 
-
           // Store extracted PDFs temporarily
           let extractedPdfsGlobal = {};
 
@@ -1088,11 +1086,8 @@
             const fileNameHeading = document.createElement('h4');
             fileNameHeading.textContent = `File: ${zipFile.name}`;
             pdfListPopup.appendChild(fileNameHeading);
-
-
             const zip = await JSZip.loadAsync(zipFile);
             pdfListPopup.innerHTML = '';
-
             for (const fileName in zip.files) {
               if (/\.(pdf|docx?|)$/i.test(fileName)) {
                 const file = zip.files[fileName];
@@ -1136,7 +1131,6 @@
               }
             }
 
-
             if (Object.keys(extractedPdfsGlobal).length === 0) {
               pdfListPopup.innerHTML = '<li>No PDF files found in this ZIP.</li>';
             }
@@ -1147,10 +1141,8 @@
             const pdfContainerPopup = document.getElementById('pdfContainerPopup');
             pdfContainerPopup.innerHTML = `<p>📄 Loading ${fileName}...</p>`;
             pdfViewerModal.style.display = 'flex';
-
             const pdfFile = extractedPdfsGlobal[fileName];
             const pdfData = await pdfFile.async('uint8array');
-
             const pdf = await pdfjsLib.getDocument(pdfData).promise;
             pdfContainerPopup.innerHTML = `<h3>${fileName}</h3>`;
 
@@ -1165,7 +1157,6 @@
               await page.render({ canvasContext: ctx, viewport }).promise;
             }
           }
-
 
           async function openWordFromZip(fileName) {
             const modal = document.getElementById('pdfViewerModal');
@@ -1209,6 +1200,7 @@
               container.innerHTML = `<p>❌ Please Check in ORIGINAL file (${err.message})</p>`;
             }
           }
+
           // Stack used to drill into nested ZIP files
           let zipStack = []; // each frame: { name: string, zip: JSZip }
 
@@ -1260,7 +1252,6 @@
                 addedAny = true;
                 const fileButton = document.createElement('button');
                 fileButton.textContent = entryName;
-
                 fileButton.style.display = 'block';
                 fileButton.style.width = '80%';
                 fileButton.style.padding = '10px 15px';
@@ -1272,6 +1263,7 @@
                 fileButton.style.cursor = 'pointer';
                 fileButton.style.textAlign = 'left';
                 fileButton.style.transition = 'all 0.2s ease';
+
                 // Hover effect
                 fileButton.addEventListener('mouseenter', () => {
                   fileButton.style.background = '#9970cd';
@@ -1348,14 +1340,12 @@
             const container = document.getElementById('pdfContainerPopup');
             container.innerHTML = `<p>📄 Loading ${entryName}...</p>`;
             modal.style.display = 'flex';
-
             const frame = zipStack[zipStack.length - 1];
             const file = frame.zip.file(entryName);
             if (!file) {
               container.innerHTML = `<p>❌ File not found: ${entryName}</p>`;
               return;
             }
-
             const arrayBuffer = await file.async('arraybuffer');
             try {
               const result = await mammoth.convertToHtml({ arrayBuffer });
@@ -1372,7 +1362,6 @@
                   footerText += Array.from(texts).map(t => t.textContent).join(' ') + '\n';
                 }
               }
-
               container.innerHTML = `<h3>${entryName}</h3>
                            ${result.value}
                            <h4>📌 Footer:</h4>
@@ -1381,7 +1370,6 @@
               container.innerHTML = `<p>❌ Please Check in ORIGINAL file (${err.message})</p>`;
             }
           }
-
 
           // Close modal handlers
           document.getElementById('closeListModal').onclick = () => {
@@ -1546,16 +1534,38 @@
           }
 
           //search text in zip
-          async function searchTextInZip(zipFile, labels, keyword, resultContainer, statusDiv) {
-            const zip = await JSZip.loadAsync(zipFile);
-            const fileEntries = Object.entries(zip.files).filter(([n, f]) => !f.dir);
-            const fileNames = fileEntries.map(([n]) => n.toLowerCase());
-
-            //for each label find matched files (same logic as checkZipFile)
+           async function searchTextInZip(zipFile, labels, keyword, resultContainer, statusDiv) {
+            async function collectEntriesFromZip(zip, prefix = '') {
+              const results = [];
+              const names = Object.keys(zip.files).sort();
+              for (const name of names) {
+                const entry = zip.files[name];
+                if (entry.dir) continue;
+                const fullPath = prefix + name;
+                if (name.toLowerCase().endsWith('.zip')) {
+                  try {
+                    const ab = await entry.async('arraybuffer');
+                    const nestedZip = await JSZip.loadAsync(ab);
+                    const nestedEntries = await collectEntriesFromZip(nestedZip, fullPath + '/');
+                    results.push(...nestedEntries);
+                  } catch (e) {
+                    console.warn('Could not open nested zip during search:', fullPath, e);
+                  }
+                } else {
+                  results.push([fullPath, entry]);
+                }
+              }
+              return results;
+            }
+        
+            const topZip = await JSZip.loadAsync(zipFile);
+            const entries = await collectEntriesFromZip(topZip, '');
+            const fileEntries = entries; // array of [name, file]
+        
             for (const label of labels) {
               const lowerLabel = label.toLowerCase().trim();
               const parts = lowerLabel.split(/\s+/);
-
+        
               let matchedEntries = [];
               switch (label) {
                 case "04":
@@ -1579,8 +1589,7 @@
                 default:
                   matchedEntries = fileEntries.filter(([name]) => parts.every(part => name.toLowerCase().includes(part)));
               }
-
-
+        
               if (!matchedEntries.length) {
                 const nlow = name => name.toLowerCase();
                 if (label === "customer report") {
@@ -1602,28 +1611,24 @@
                   });
                 }
               }
-
-
-              // if no matched files, clear any previous search result
+        
               const resultSpan = resultContainer.querySelector(`.search-result[data-label="${label}"]`);
               if (!matchedEntries.length) {
                 if (resultSpan) resultSpan.textContent = '';
                 continue;
               }
-
-              // search inside matched entries
+        
               let foundText = false;
               let snippet = '';
               for (const entry of matchedEntries) {
                 const base = entry[0].split('/').pop().toLowerCase();
-
                 if (!(base.endsWith('.docx') || base.endsWith('.doc') || base.endsWith('.pdf') || base.endsWith('.txt') || base.endsWith('.xml') || base.endsWith('.csv'))) continue;
                 const text = normalizeForSearch(await extractTextFromEntry(entry));
                 if (!text) continue;
-
+        
                 const normKeyword = normalizeForSearch(keyword);
                 const idx = text.indexOf(normKeyword);
-
+        
                 if (idx !== -1) {
                   foundText = true;
                   const start = Math.max(0, idx - 40);
@@ -1631,7 +1636,7 @@
                   break;
                 }
               }
-
+        
               if (resultSpan) {
                 resultSpan.textContent = foundText ? ' — ✅text found' : ' — ❌ text not found';
                 resultSpan.title = snippet || '';
