@@ -660,13 +660,16 @@
               if (found) status = "full";
             }
             if (label === "08" && !found) {
-              found = fileNames.some(name => name.includes("audit plan"));
-              if (found) status = "full";
-            }
-            if (label === "08" && !found) {
-              found = fileNames.some(name => name.startsWith("08-"));
-              if (found) status = "full";
-            }
+  found = fileNames.some(name => {
+    const baseName = name.split('/').pop();
+    return (
+      baseName.startsWith("08-") ||
+      name.includes("audit plan")
+    );
+  });
+
+  if (found) status = "full";
+}
             if (label === "13 Next" && !found) {
               found = fileNames.some(name => {
                 const baseName = name.split('/').pop();
