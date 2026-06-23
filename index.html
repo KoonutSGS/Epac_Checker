@@ -3,6 +3,7 @@
 
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Epac Checker</title>
   <link rel="icon" type="image/png"
     href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAACXBIWXMAAAsTAAALEwEAmpwYAAACwklEQVR4nO2XXWhSYRjHT5fdd9dNEUG0m91EEZgOocZGQRAL6qKoPJO6ae1CglqwKGr0QSxtrph22V11dLQxHI4FhTZqmlO3nTmduq1dZJNcHfUfb2fNo+dovn7UzR74w8uD8vze58tXhtk0iek4nNNx+MxySLMcQKF0Q18wecgaNTDVBGfpguZpR68HO3u9UFkWHlQEwL6Gr1qA3xCPvVBZo1fpATjqtCsCEO0yerMqS/Q0LQBqBUC02+TLaC2x5ooAOoeBxVVsGDkTn8kFuGM5vZkpDkC0x+QX1JalRmqAJy7IjPhKAZAGVILY2xf43mpd2U4FYHbLAYivVAkan/KKAET7ns1NUgE8eicHID57UO4XMsCtMeDMSwHq5zHsHwjLdHBgIUUFoLcBtmAu1VxA9BlGxExIZXQBF+1/b1IqALYOoga46czdstv5jwG6nUA2m6szORNfYQ+Q8awLgLnIFBT2wJ3x/wxgLtKEHYPfcM/xEUbnOG6PTEHPpetTAukYku9dG4pg4tN1ZHgtMKfZUHLmKMBrbiB8YGtZAOw6BE0TPnS4kZptyQusIBf86m1lAbAUIjcvI7goXuMAmC0lAfQ2Md1/FhE5Ky2iu+tNSNJeMmjkJBBpk0A0tdVkFS+uig1XWPM8hU8A6RUg8UICoLZXNAWsQvrvOybyA0Z1QOiweA4dAX4EgJ8hYL5V8jn1Uk1+jt0xIBB+mw8gxIDUByDUDCRHgUwCiJwqyIx6rSRA5zAQlzxIYuRBMqQM4IlMFWTgvBhUWAayAhC/rNSIfM2mQM+lkZw+JocQ4sCXnmK90V/TRyn33lLeCIoNmMZ8U4MMQCf+IakI4JJ9DSFfe7l7oEthDTHMhVc4W80yujL4FX5vR+mb85ouxSVUAOGttBztXBb9Y6PwTBqQmD4OgddmU7Mty6TmimlnNo1hfgESe5mBhgynVgAAAABJRU5ErkJggg==">
@@ -353,7 +354,7 @@
       padding: 20px;
       border-radius: 8px;
       width: 30%;
-      max-height: 80%;
+      max-height: 90%;
       overflow-y: auto;
       position: relative;
     }
@@ -407,6 +408,7 @@
 
         <p style="color: #555; margin: 5px;">Analyze and export ZIP file contents efficiently.</p>
         <h3 style="color: #e21313; margin: 5px; ">*Epac CertIQ must be open along (If you want to Query)*</h3>
+       
       </header>
       <!-- Mini Game Modal -->
       <div id="gameModal" class="modal" aria-hidden="true">
@@ -630,13 +632,13 @@
                 status = found ? "full" : "none";
                 break;
 
-              case "08":
-                found = fileNames.some(name => {
-                  const baseName = name.split('/').pop();
-                  return baseName.startsWith("08-");
-                });
-                status = found ? "full" : "none";
-                break;
+              // case "08":
+              //   found = fileNames.some(name => {
+              //     const baseName = name.split('/').pop();
+              //     return baseName.startsWith("08-");
+              //   });
+              //   status = found ? "full" : "none";
+              //   break;
               case "11":
                 found = fileNames.some(name => {
                   const baseName = name.split('/').pop();
@@ -657,7 +659,14 @@
               found = fileNames.some(name => name.includes("visit report"));
               if (found) status = "full";
             }
-
+            if (label === "08" && !found) {
+              found = fileNames.some(name => name.includes("audit plan"));
+              if (found) status = "full";
+            }
+            if (label === "08" && !found) {
+              found = fileNames.some(name => name.startsWith("08-"));
+              if (found) status = "full";
+            }
             if (label === "13 Next" && !found) {
               found = fileNames.some(name => {
                 const baseName = name.split('/').pop();
